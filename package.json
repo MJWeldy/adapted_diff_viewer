@@ -1,9 +1,9 @@
 {
   "name": "hunkwise",
-  "publisher": "molon",
+  "publisher": "local",
   "displayName": "hunkwise",
   "description": "Per-hunk Accept/Discard for any file change",
-  "version": "0.0.29",
+  "version": "0.0.29-stable.1",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -12,9 +12,6 @@
   "engines": {
     "vscode": "^1.90.0"
   },
-  "enabledApiProposals": [
-    "editorInsets"
-  ],
   "icon": "media/icon.png",
   "categories": [
     "Other"

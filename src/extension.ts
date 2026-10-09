@@ -13,7 +13,7 @@ import { initLog, log } from './log';
 
 export async function activate(context: vscode.ExtensionContext): Promise<{ getReviewPanel: () => ReviewPanel | undefined; getStateManager: () => StateManager | undefined; getFileWatcher: () => FileWatcher | undefined }> {
   initLog();
-  const ext = vscode.extensions.getExtension('molon.hunkwise');
+  const ext = vscode.extensions.getExtension('local.hunkwise');
   log(`activate v${ext?.packageJSON?.version ?? '?'}`);
   const stateManager = new StateManager();
   stateManager.onRollback = () => onStateChanged();

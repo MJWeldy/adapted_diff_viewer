@@ -13,3 +13,8 @@ node_modules/**
 tsconfig*.json
 package-lock.json
 README.zh.md
+.vscode-test.mjs
+.gitignore
+CLAUDE.md
+Makefile
+out/**/*.map

@@ -143,7 +143,7 @@ suite('hunkwise diff editor integration', function () {
     assert.strictEqual(hunks.length, 1);
 
     // Accept via the extension's wired callback (simulating CodeLens)
-    const ext = vscode.extensions.getExtension('molon.hunkwise');
+    const ext = vscode.extensions.getExtension('local.hunkwise');
     assert.ok(ext?.isActive);
 
     // Use the CodeLens command which wires closeStaleTabs
