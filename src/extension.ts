@@ -100,13 +100,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<{ getR
     fileWatcher.resumeAll();
   }
 
-  decorationManager = new DecorationManager(stateManager, (command, filePath, hId) => {
-    if (command === 'accept') {
-      acceptHunk(stateManager, filePath, hId, () => { onStateChanged(); fireBaselineChange(filePath); void closeStaleTabs().catch(err => log(`closeStaleTabs: ${err}`)); }, 'inset');
-    } else {
-      discardHunk(stateManager, fileWatcher, filePath, hId, () => { onStateChanged(); void closeStaleTabs().catch(err => log(`closeStaleTabs: ${err}`)); }, 'inset');
-    }
-  });
+  decorationManager = new DecorationManager(stateManager, context.extensionUri);
 
   context.subscriptions.push(
     vscode.window.onDidChangeVisibleTextEditors(editors => {
@@ -119,10 +113,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<{ getR
     }),
     vscode.workspace.onDidChangeTextDocument(e => {
       if (e.document.uri.scheme !== 'file') return;
-      const editor = vscode.window.visibleTextEditors.find(
-        ed => ed.document.uri.fsPath === e.document.uri.fsPath
-      );
-      if (editor) decorationManager?.refresh([editor]);
+      decorationManager?.scheduleRefresh(e.document);
       reviewPanel?.refresh();
     }),
   );
