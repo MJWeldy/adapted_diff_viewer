@@ -5,7 +5,7 @@ import assert from 'assert';
 import {
   getWorkspaceRoot, gitListTracked, gitGetBaseline,
   sleep, waitForCondition, enableHunkwise, disableHunkwise,
-  writeFileExternally, cleanWorkspace,
+  writeFileExternally, cleanWorkspace, getStateManager,
 } from './helpers';
 
 // ── Test suite ────────────────────────────────────────────────────────────────
@@ -13,11 +13,27 @@ import {
 suite('hunkwise lifecycle integration', function () {
   this.timeout(30000);
 
+  // Settings survive disable/enable in memory (setEnabled merges current
+  // settings), so restore them or later suites inherit e.g. respectGitignore=false.
+  let savedSettings: { ignorePatterns: string[]; respectGitignore: boolean; clearOnBranchSwitch: boolean } | undefined;
+
   setup(function () {
     cleanWorkspace();
+    const sm = getStateManager();
+    savedSettings = sm && {
+      ignorePatterns: [...sm.ignorePatterns],
+      respectGitignore: sm.respectGitignore,
+      clearOnBranchSwitch: sm.clearOnBranchSwitch,
+    };
   });
 
   teardown(async function () {
+    const sm = getStateManager();
+    if (sm && savedSettings) {
+      sm.setIgnorePatterns(savedSettings.ignorePatterns);
+      sm.setRespectGitignore(savedSettings.respectGitignore);
+      sm.setClearOnBranchSwitch(savedSettings.clearOnBranchSwitch);
+    }
     try { await disableHunkwise(); } catch { /* ignore */ }
     cleanWorkspace();
   });
