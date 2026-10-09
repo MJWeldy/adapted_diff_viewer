@@ -8,7 +8,7 @@ import { ReviewPanel } from './reviewPanel';
 import { registerCommands } from './commands';
 import { DiffCodeLensProvider } from './diffCodeLens';
 import { HunkHoverProvider } from './hunkHover';
-import { registerHunkCommands } from './hunkCommands';
+import { registerHunkCommands, HasHunksContext } from './hunkCommands';
 import { initLog, log } from './log';
 
 export async function activate(context: vscode.ExtensionContext): Promise<{ getReviewPanel: () => ReviewPanel | undefined; getStateManager: () => StateManager | undefined; getFileWatcher: () => FileWatcher | undefined }> {
@@ -35,12 +35,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<{ getR
   let decorationManager: DecorationManager | undefined;
   let reviewPanel: ReviewPanel | undefined;
   let diffCodeLensProvider: DiffCodeLensProvider | undefined;
+  const hasHunksContext = new HasHunksContext(stateManager);
+  context.subscriptions.push(hasHunksContext);
 
   // Original state-changed callback — no diff-editor side effects
   function onStateChanged(): void {
     decorationManager?.refresh();
     reviewPanel?.refresh();
     diffCodeLensProvider?.fire();
+    hasHunksContext.update();
   }
 
   /** Notify the diff editor that a specific file's baseline changed (only after accept). */
@@ -112,10 +115,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<{ getR
     vscode.window.onDidChangeActiveTextEditor(editor => {
       if (editor) decorationManager?.refresh([editor]);
       diffCodeLensProvider?.fire();
+      hasHunksContext.update();
     }),
     vscode.workspace.onDidChangeTextDocument(e => {
       if (e.document.uri.scheme !== 'file') return;
       decorationManager?.scheduleRefresh(e.document);
+      hasHunksContext.scheduleUpdate();
       reviewPanel?.refresh();
     }),
   );

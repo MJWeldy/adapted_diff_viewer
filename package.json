@@ -42,6 +42,49 @@
         "command": "hunkwise.refresh",
         "title": "hunkwise: Refresh State",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "hunkwise.nextHunk",
+        "title": "hunkwise: Next Hunk",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "hunkwise.prevHunk",
+        "title": "hunkwise: Previous Hunk",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "hunkwise.acceptHunkAtCursor",
+        "title": "hunkwise: Accept Hunk at Cursor",
+        "icon": "$(check)"
+      },
+      {
+        "command": "hunkwise.discardHunkAtCursor",
+        "title": "hunkwise: Discard Hunk at Cursor",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "hunkwise.openHunkDiff",
+        "title": "hunkwise: Open Diff for Hunk",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "hunkwise.acceptAllInFile",
+        "title": "hunkwise: Accept All Hunks in File",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "hunkwise.discardAllInFile",
+        "title": "hunkwise: Discard All Hunks in File",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "hunkwise.acceptHunk",
+        "title": "hunkwise: Accept Hunk"
+      },
+      {
+        "command": "hunkwise.discardHunk",
+        "title": "hunkwise: Discard Hunk"
       }
     ],
     "menus": {
@@ -55,6 +98,81 @@
           "command": "hunkwise.openSettings",
           "when": "view == hunkwiseToolbar",
           "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "submenu": "hunkwise.editorContext",
+          "when": "resourceScheme == file && hunkwise.hasHunks",
+          "group": "hunkwise@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "hunkwise.acceptHunk",
+          "when": "false"
+        },
+        {
+          "command": "hunkwise.discardHunk",
+          "when": "false"
+        },
+        {
+          "command": "hunkwise.nextHunk",
+          "when": "hunkwise.hasHunks"
+        },
+        {
+          "command": "hunkwise.prevHunk",
+          "when": "hunkwise.hasHunks"
+        },
+        {
+          "command": "hunkwise.acceptHunkAtCursor",
+          "when": "hunkwise.hasHunks"
+        },
+        {
+          "command": "hunkwise.discardHunkAtCursor",
+          "when": "hunkwise.hasHunks"
+        },
+        {
+          "command": "hunkwise.openHunkDiff",
+          "when": "hunkwise.hasHunks"
+        },
+        {
+          "command": "hunkwise.acceptAllInFile",
+          "when": "hunkwise.hasHunks"
+        },
+        {
+          "command": "hunkwise.discardAllInFile",
+          "when": "hunkwise.hasHunks"
+        }
+      ],
+      "hunkwise.editorContext": [
+        {
+          "command": "hunkwise.acceptHunkAtCursor",
+          "group": "1_hunk@1"
+        },
+        {
+          "command": "hunkwise.discardHunkAtCursor",
+          "group": "1_hunk@2"
+        },
+        {
+          "command": "hunkwise.openHunkDiff",
+          "group": "1_hunk@3"
+        },
+        {
+          "command": "hunkwise.nextHunk",
+          "group": "2_nav@1"
+        },
+        {
+          "command": "hunkwise.prevHunk",
+          "group": "2_nav@2"
+        },
+        {
+          "command": "hunkwise.acceptAllInFile",
+          "group": "3_file@1"
+        },
+        {
+          "command": "hunkwise.discardAllInFile",
+          "group": "3_file@2"
         }
       ]
     },
@@ -75,7 +193,51 @@
           "type": "webview"
         }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "hunkwise.nextHunk",
+        "key": "ctrl+alt+]",
+        "mac": "cmd+alt+]",
+        "when": "editorTextFocus && hunkwise.hasHunks"
+      },
+      {
+        "command": "hunkwise.prevHunk",
+        "key": "ctrl+alt+[",
+        "mac": "cmd+alt+[",
+        "when": "editorTextFocus && hunkwise.hasHunks"
+      },
+      {
+        "command": "hunkwise.acceptHunkAtCursor",
+        "key": "ctrl+alt+y",
+        "mac": "cmd+alt+y",
+        "when": "editorTextFocus && hunkwise.hasHunks"
+      },
+      {
+        "command": "hunkwise.discardHunkAtCursor",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n",
+        "when": "editorTextFocus && hunkwise.hasHunks"
+      },
+      {
+        "command": "hunkwise.acceptAllInFile",
+        "key": "ctrl+shift+alt+y",
+        "mac": "cmd+shift+alt+y",
+        "when": "editorTextFocus && hunkwise.hasHunks"
+      },
+      {
+        "command": "hunkwise.discardAllInFile",
+        "key": "ctrl+shift+alt+n",
+        "mac": "cmd+shift+alt+n",
+        "when": "editorTextFocus && hunkwise.hasHunks"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "hunkwise.editorContext",
+        "label": "hunkwise"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
