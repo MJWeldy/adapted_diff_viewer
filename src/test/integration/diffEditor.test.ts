@@ -142,12 +142,12 @@ suite('hunkwise diff editor integration', function () {
     const hunks = computeHunks(fileState.baseline, 'modified\n');
     assert.strictEqual(hunks.length, 1);
 
-    // Accept via the extension's wired callback (simulating CodeLens/inset)
+    // Accept via the extension's wired callback (simulating CodeLens)
     const ext = vscode.extensions.getExtension('molon.hunkwise');
     assert.ok(ext?.isActive);
 
     // Use the CodeLens command which wires closeStaleTabs
-    await vscode.commands.executeCommand('hunkwise.codeLensAcceptHunk', filePath, hunkId(hunks[0]));
+    await vscode.commands.executeCommand('hunkwise.acceptHunk', vscode.Uri.file(filePath), hunkId(hunks[0]));
     await sleep(1000);
 
     // File should exit reviewing
@@ -160,27 +160,27 @@ suite('hunkwise diff editor integration', function () {
 
   // ── CodeLens visibility ────────────────────────────────────────────────────
 
-  test('CodeLens only appears when hunkwise diff tab is active', async () => {
+  test('CodeLens hidden in normal editor when inline decorations are off', async () => {
     const filePath = await setupReviewingFile(
       'codelens-test.txt',
       'line 1\n',
       'changed line 1\n'
     );
 
-    // Open normal editor first — no CodeLens expected
+    const sm = getStateManager();
+    sm.setShowInlineDecorations(false);
+
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
     await vscode.window.showTextDocument(doc);
     await sleep(300);
 
-    // Get CodeLens from the provider
     const codeLenses = await vscode.commands.executeCommand<vscode.CodeLens[]>(
       'vscode.executeCodeLensProvider', vscode.Uri.file(filePath)
     );
-
     const hunkwiseLenses = (codeLenses ?? []).filter(
-      l => l.command?.command === 'hunkwise.codeLensAcceptHunk'
-        || l.command?.command === 'hunkwise.codeLensDiscardHunk'
+      l => l.command?.command.startsWith('hunkwise.')
     );
-    assert.strictEqual(hunkwiseLenses.length, 0, 'No hunkwise CodeLens in normal editor');
+    assert.strictEqual(hunkwiseLenses.length, 0, 'No hunkwise CodeLens when inline decorations are off');
+    sm.setShowInlineDecorations(true);
   });
 });

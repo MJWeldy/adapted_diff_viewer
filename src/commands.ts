@@ -225,6 +225,38 @@ export function acceptHunk(
   log(`acceptHunk(${basename}): done`);
 }
 
+/** Open the baseline ↔ current diff for a file and reveal a hunk (or the first one). */
+export async function openDiffEditor(
+  stateManager: StateManager,
+  filePath: string,
+  targetHunkId?: string
+): Promise<void> {
+  const fileName = path.basename(filePath);
+  const baselineUri = vscode.Uri.file(filePath).with({ scheme: 'hunkwise-baseline' });
+  const currentUri = vscode.Uri.file(filePath);
+
+  await vscode.commands.executeCommand('vscode.diff', baselineUri, currentUri, `${fileName} (hunkwise)`);
+
+  // Jump to the target hunk position in the diff editor's modified side.
+  // Prefer the embedded editor (viewColumn undefined) over a normal editor for the same file.
+  const fileState = stateManager.getFile(filePath);
+  const candidates = vscode.window.visibleTextEditors.filter(
+    e => e.document.uri.scheme === 'file' && e.document.uri.fsPath === filePath
+  );
+  const editor = candidates.find(e => e.viewColumn === undefined) ?? candidates[0];
+  if (fileState && editor) {
+    const hunks = computeHunks(fileState.baseline, editor.document.getText());
+    const target = targetHunkId
+      ? hunks.find(h => hunkId(h) === targetHunkId)
+      : hunks[0];
+    if (target) {
+      const pos = new vscode.Position(Math.max(0, target.newStart - 1), 0);
+      editor.selection = new vscode.Selection(pos, pos);
+      editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
+    }
+  }
+}
+
 /** Reveal the next hunk in the editor after an accept/discard operation. */
 function revealNextHunk(filePath: string, remainingHunks: ReturnType<typeof computeHunks>, originalNewStart: number): void {
   const editor = vscode.window.visibleTextEditors.find(e => e.document.uri.fsPath === filePath);

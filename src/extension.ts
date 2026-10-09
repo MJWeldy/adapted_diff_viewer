@@ -5,8 +5,10 @@ import { StateManager } from './stateManager';
 import { FileWatcher } from './fileWatcher';
 import { DecorationManager } from './decorationManager';
 import { ReviewPanel } from './reviewPanel';
-import { registerCommands, acceptHunk, discardHunk } from './commands';
+import { registerCommands } from './commands';
 import { DiffCodeLensProvider } from './diffCodeLens';
+import { HunkHoverProvider } from './hunkHover';
+import { registerHunkCommands } from './hunkCommands';
 import { initLog, log } from './log';
 
 export async function activate(context: vscode.ExtensionContext): Promise<{ getReviewPanel: () => ReviewPanel | undefined; getStateManager: () => StateManager | undefined; getFileWatcher: () => FileWatcher | undefined }> {
@@ -125,18 +127,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<{ getR
 
   registerCommands(context, stateManager, fileWatcher, reviewPanel, onStateChanged);
 
-  // ── Diff CodeLens ─────────────────────────────────────────────────────────
+  // ── Per-hunk CodeLens, hover and commands ─────────────────────────────────
   diffCodeLensProvider = new DiffCodeLensProvider(stateManager);
   context.subscriptions.push(
     diffCodeLensProvider,
     vscode.languages.registerCodeLensProvider({ scheme: 'file' }, diffCodeLensProvider),
-    vscode.commands.registerCommand('hunkwise.codeLensAcceptHunk', (filePath: string, hId: string) => {
-      acceptHunk(stateManager, filePath, hId, () => { onStateChanged(); fireBaselineChange(filePath); void closeStaleTabs().catch(err => log(`closeStaleTabs: ${err}`)); }, 'codeLens');
-    }),
-    vscode.commands.registerCommand('hunkwise.codeLensDiscardHunk', (filePath: string, hId: string) => {
-      discardHunk(stateManager, fileWatcher, filePath, hId, () => { onStateChanged(); void closeStaleTabs().catch(err => log(`closeStaleTabs: ${err}`)); }, 'codeLens');
-    }),
+    vscode.languages.registerHoverProvider({ scheme: 'file' }, new HunkHoverProvider(stateManager)),
   );
+  registerHunkCommands(context, stateManager, fileWatcher, { onStateChanged, fireBaselineChange, closeStaleTabs });
 
   context.subscriptions.push(
     vscode.commands.registerCommand('hunkwise.openSettings', () => {

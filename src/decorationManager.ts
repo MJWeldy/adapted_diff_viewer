@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { StateManager } from './stateManager';
-import { computeHunks } from './diffEngine';
-import { computeHunkAnchors, removedSummary, deletionLabel } from './hunkAnchors';
+import { getDocumentHunks } from './documentHunks';
+import { removedSummary, deletionLabel } from './hunkAnchors';
 
 const REFRESH_DEBOUNCE_MS = 100;
 
@@ -84,29 +84,20 @@ export class DecorationManager {
   }
 
   private applyToEditor(editor: vscode.TextEditor, diffPaths: Set<string>): void {
-    if (editor.document.uri.scheme !== 'file') return;
-    const filePath = editor.document.uri.fsPath;
-    const fileState = this.stateManager.getFile(filePath);
-
+    const doc = editor.document;
     // Skip in diff editors (viewColumn undefined) — the diff view already shows
     // the change — or when the user disabled inline decorations.
-    const isInDiff = editor.viewColumn === undefined && diffPaths.has(filePath);
-    if (!fileState || fileState.status !== 'reviewing' || isInDiff || !this.stateManager.showInlineDecorations) {
+    const isInDiff = editor.viewColumn === undefined && diffPaths.has(doc.uri.fsPath);
+    if (isInDiff || !this.stateManager.showInlineDecorations) {
       this.clear(editor);
       return;
     }
-
-    const doc = editor.document;
-    const hunks = computeHunks(fileState.baseline, doc.getText());
-    const lastLineEmpty = doc.lineAt(doc.lineCount - 1).text.length === 0;
-    const anchors = computeHunkAnchors(hunks, doc.lineCount, lastLineEmpty);
 
     const added: vscode.Range[] = [];
     const removed: vscode.DecorationOptions[] = [];
     const deletions: vscode.DecorationOptions[] = [];
 
-    hunks.forEach((hunk, i) => {
-      const anchor = anchors[i];
+    for (const { hunk, anchor } of getDocumentHunks(this.stateManager, doc)) {
       const eol = doc.lineAt(anchor.line).range.end;
       const at = new vscode.Range(eol, eol);
       if (anchor.added) {
@@ -120,7 +111,7 @@ export class DecorationManager {
           renderOptions: { after: { contentText: deletionLabel(hunk.oldLines, anchor.deletion) } },
         });
       }
-    });
+    }
 
     editor.setDecorations(this.addedLine, added);
     editor.setDecorations(this.removedMarker, removed);

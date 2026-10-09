@@ -13,6 +13,7 @@ import {
   discardFileByPath,
   acceptHunk,
   discardHunk,
+  openDiffEditor,
 } from './commands';
 
 interface PanelState {
@@ -275,7 +276,7 @@ export class ReviewPanel implements vscode.WebviewViewProvider {
         if (msg.filePath) {
           log(`openFile(${path.basename(msg.filePath)}): opening in ${this.stateManager.useDiffEditor ? 'diffEditor' : 'normalEditor'}`);
           if (this.stateManager.useDiffEditor) {
-            await this.openDiffEditor(msg.filePath);
+            await openDiffEditor(this.stateManager, msg.filePath);
           } else {
             const fileState = this.stateManager.getFile(msg.filePath);
             const doc = await vscode.window.showTextDocument(vscode.Uri.file(msg.filePath));
@@ -302,7 +303,7 @@ export class ReviewPanel implements vscode.WebviewViewProvider {
         if (msg.filePath && msg.hunkId) {
           log(`jumpToHunk(${path.basename(msg.filePath)}): hunkId=${msg.hunkId}, opening in ${this.stateManager.useDiffEditor ? 'diffEditor' : 'normalEditor'}`);
           if (this.stateManager.useDiffEditor) {
-            await this.openDiffEditor(msg.filePath, msg.hunkId);
+            await openDiffEditor(this.stateManager, msg.filePath, msg.hunkId);
           } else {
             const fileState = this.stateManager.getFile(msg.filePath);
             if (fileState) {
@@ -318,33 +319,6 @@ export class ReviewPanel implements vscode.WebviewViewProvider {
           }
         }
         break;
-    }
-  }
-
-  private async openDiffEditor(filePath: string, targetHunkId?: string): Promise<void> {
-    const fileName = path.basename(filePath);
-    const baselineUri = vscode.Uri.file(filePath).with({ scheme: 'hunkwise-baseline' });
-    const currentUri = vscode.Uri.file(filePath);
-
-    await vscode.commands.executeCommand('vscode.diff', baselineUri, currentUri, `${fileName} (hunkwise)`);
-
-    // Jump to the target hunk position in the diff editor's modified side.
-    // Prefer the embedded editor (viewColumn undefined) over a normal editor for the same file.
-    const fileState = this.stateManager.getFile(filePath);
-    const candidates = vscode.window.visibleTextEditors.filter(
-      e => e.document.uri.scheme === 'file' && e.document.uri.fsPath === filePath
-    );
-    const editor = candidates.find(e => e.viewColumn === undefined) ?? candidates[0];
-    if (fileState && editor) {
-      const hunks = computeHunks(fileState.baseline, editor.document.getText());
-      const target = targetHunkId
-        ? hunks.find(h => hunkId(h) === targetHunkId)
-        : hunks[0];
-      if (target) {
-        const pos = new vscode.Position(Math.max(0, target.newStart - 1), 0);
-        editor.selection = new vscode.Selection(pos, pos);
-        editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
-      }
     }
   }
 
