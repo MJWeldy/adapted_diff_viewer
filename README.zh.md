@@ -33,7 +33,7 @@
 
 ```bash
 npm install
-npx @vscode/vsce package --allow-missing-repository
+npx @vscode/vsce package
 code --install-extension hunkwise-*.vsix --force
 ```
 

@@ -37,7 +37,7 @@ Requires Node.js 18+ and VS Code 1.90+. No proposed APIs and no `argv.json` chan
 
 ```bash
 npm install
-npx @vscode/vsce package --allow-missing-repository
+npx @vscode/vsce package
 code --install-extension hunkwise-*.vsix --force
 ```
 
