@@ -282,7 +282,7 @@ function renderSettingsScreen(state) {
     vscode.postMessage({ command: 'setShowInlineDecorations', value: inlineDecCheckbox.checked });
   });
   inlineDecDescRow.appendChild(inlineDecCheckbox);
-  inlineDecDescRow.appendChild(el('span', 'settings-check-desc', 'Show Accept/Discard buttons and diff highlights inline in the editor'));
+  inlineDecDescRow.appendChild(el('span', 'settings-check-desc', 'Show Accept/Discard CodeLens, line highlights and removed-lines hovers in the editor'));
   inlineDecRow.appendChild(inlineDecDescRow);
   appearanceSection.appendChild(inlineDecRow);
 

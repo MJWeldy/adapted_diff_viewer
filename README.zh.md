@@ -8,6 +8,8 @@
 
 在 VSCode 中对任意文件变更进行逐块（hunk）接受/丢弃操作。
 
+> 本项目是 [molon/hunkwise](https://github.com/molon/hunkwise) 的分支，维护于 [MJWeldy/adapted_diff_viewer](https://github.com/MJWeldy/adapted_diff_viewer)。它用稳定 API（CodeLens、装饰、悬停提示）替换了上游使用的提案 API `editorInsets`，可在 VS Code 稳定版中以普通 `.vsix` 安装，无需修改 `argv.json`。扩展 ID 为 `local.hunkwise`。英文版 [README.md](README.md) 为准。
+
 [Claude Code](https://docs.anthropic.com/en/docs/claude-code)、[OpenCode](https://github.com/anomalyco/opencode) 等 AI 编程工具以 CLI 或插件形式运行，不像 Cursor、Windsurf、Copilot 那样拥有原生 IDE，因此缺少逐块审查变更的内置体验。
 
 **hunkwise** 正是为此而生——将逐块 review 控件直接带入 VSCode，适用于任何外部文件变更。
@@ -17,8 +19,9 @@
 ## 功能特性
 
 - 追踪来自任何来源的文件变更（AI 工具、脚本、手动编辑）
-- 在编辑器内联显示逐块 `✓ Accept | ↺ Discard` 操作控件
-- 新增行绿色高亮，删除行红色高亮
+- 每个块上方显示 `✓ Accept | ↺ Discard | ⇄ Open diff` CodeLens 操作
+- 新增行绿色高亮；删除行以内联摘要显示（`−2 lines`、`▸ 3 lines removed above`），悬停或 diff 视图中可查看完整内容
+- 提供键盘快捷键和编辑器右键菜单（关闭 CodeLens 时同样可用）
 - 侧边栏面板列出所有待处理文件及块详情，支持批量操作
 - 支持新建文件和已删除文件的追踪与展示
 - 通过内置轻量 git 仓库持久化状态，VSCode 重启后自动恢复
@@ -26,11 +29,15 @@
 
 ## 安装
 
-hunkwise 使用了 [VSCode 提案 API](https://code.visualstudio.com/api/advanced-topics/using-proposed-api)（`editorInsets`），无法从应用商店安装。
+需要 Node.js 18+ 和 VS Code 1.90+。不使用提案 API，无需修改 `argv.json`。
 
-直接告诉你的 AI 工具：
+```bash
+npm install
+npx @vscode/vsce package --allow-missing-repository
+code --install-extension hunkwise-*.vsix --force
+```
 
-> Run this skill: <https://github.com/molon/hunkwise/blob/main/skills/install-hunkwise/SKILL.md>
+或直接运行 `make install`。安装后重新加载 VS Code 窗口。
 
 ## 使用方法
 
@@ -44,7 +51,9 @@ hunkwise 使用了 [VSCode 提案 API](https://code.visualstudio.com/api/advance
 
 ### 审查变更
 
-- 在编辑器中点击每个块上方的 `✓` 或 `↺` 按钮
+- 点击每个块上方 CodeLens 中的 `✓ Accept`、`↺ Discard` 或 `⇄ Open diff`
+- 悬停在变更行（或 `▸ N lines removed` 标记）上可查看被删除的行及相同操作
+- 使用键盘快捷键（`Ctrl+Alt+]` / `Ctrl+Alt+[` 切换块，`Ctrl+Alt+Y` / `Ctrl+Alt+N` 接受/丢弃光标处的块，加 `Shift` 作用于整个文件；macOS 用 `Cmd`），或在编辑器中右键 → **hunkwise**
 - 在 **hunkwise** 侧边栏面板中可以：
   - 查看所有有待处理变更的文件
   - 对单个块执行接受或丢弃

@@ -10,17 +10,22 @@
 
 Per-hunk Accept/Discard for any file change in VSCode.
 
+> This is a fork of [molon/hunkwise](https://github.com/molon/hunkwise), maintained at [MJWeldy/adapted_diff_viewer](https://github.com/MJWeldy/adapted_diff_viewer). It replaces upstream's proposed `editorInsets` API with stable VS Code APIs (CodeLens, decorations, hover), so it installs as a normal `.vsix` on VS Code stable with no `argv.json` changes. The extension ID is `local.hunkwise`.
+
 AI coding tools like [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenCode](https://github.com/anomalyco/opencode), and other CLI/plugin-based assistants lack a native IDE — unlike Cursor, Windsurf, or Copilot, they have no built-in way to review changes hunk by hunk.
 
 **hunkwise** fills that gap by bringing per-hunk review controls directly into VSCode for any external file change.
 
 ![snapshot](media/snapshot.png)
 
+*Screenshot from upstream. It shows the older inline-row UI; this fork uses CodeLens and hover instead (see [Editor UI](#editor-ui)).*
+
 ## Features
 
 - Tracks file changes from any source (AI tools, scripts, manual edits)
-- Per-hunk `✓ Accept | ↺ Discard` controls inline in the editor
-- Added lines highlighted in green, removed lines highlighted in red
+- Per-hunk `✓ Accept | ↺ Discard | ⇄ Open diff` CodeLens above each change
+- Added lines highlighted in green; removed lines summarized inline (`−2 lines`, `▸ 3 lines removed above`) and shown in full on hover or in the diff view
+- Keyboard shortcuts and an editor context menu for hunk navigation and actions (works with CodeLens disabled)
 - Sidebar panel lists all pending files with hunk details and batch actions
 - New files and deleted files are tracked and displayed
 - State persisted across VSCode restarts via a lightweight internal git repo
@@ -28,11 +33,17 @@ AI coding tools like [Claude Code](https://docs.anthropic.com/en/docs/claude-cod
 
 ## Installation
 
-hunkwise uses a [proposed VSCode API](https://code.visualstudio.com/api/advanced-topics/using-proposed-api) (`editorInsets`) and cannot be installed from the marketplace.
+Requires Node.js 18+ and VS Code 1.90+. No proposed APIs and no `argv.json` changes.
 
-Just tell your AI tool:
+```bash
+npm install
+npx @vscode/vsce package --allow-missing-repository
+code --install-extension hunkwise-*.vsix --force
+```
 
-> Run this skill: <https://github.com/molon/hunkwise/blob/main/skills/install-hunkwise/SKILL.md>
+Or `make install`, which does the same. Reload the VS Code window afterwards.
+
+If you previously installed upstream's `molon.hunkwise`, uninstall it first so the two don't both track changes.
 
 ## Usage
 
@@ -46,7 +57,9 @@ Once enabled, any external tool (AI assistant, script, etc.) that writes to a fi
 
 ### Reviewing changes
 
-- Click `✓` or `↺` above each hunk in the editor
+- Click `✓ Accept`, `↺ Discard` or `⇄ Open diff` in the CodeLens above each hunk
+- Hover a changed line (or a `▸ N lines removed` marker) to see the removed lines and the same actions
+- Use the keyboard shortcuts below, or right-click → **hunkwise** in the editor
 - Use the **hunkwise** sidebar panel to:
   - See all files with pending changes
   - Accept or discard individual hunks
@@ -70,6 +83,22 @@ You can drag both the hunkwise panel and the Claude Code panel into the Chat pan
 | `hunkwise: Enable` | Enable hunkwise and snapshot the workspace |
 | `hunkwise: Disable` | Disable hunkwise and clear all state |
 | `hunkwise: Settings` | Open the settings panel |
+| `hunkwise: Next Hunk` / `Previous Hunk` | Move the cursor between hunks in the current file |
+| `hunkwise: Accept Hunk at Cursor` / `Discard Hunk at Cursor` | Act on the hunk under the cursor |
+| `hunkwise: Open Diff for Hunk` | Open a baseline ↔ current diff at the hunk under the cursor |
+| `hunkwise: Accept All Hunks in File` / `Discard All Hunks in File` | Act on every hunk in the current file |
+
+### Keyboard shortcuts
+
+Active when an editor with pending hunks has focus. On macOS use `Cmd` instead of `Ctrl`. Rebind them in **Keyboard Shortcuts** by searching for `hunkwise`.
+
+| Shortcut | Action |
+| -------- | ------ |
+| `Ctrl+Alt+]` / `Ctrl+Alt+[` | Next / previous hunk |
+| `Ctrl+Alt+Y` / `Ctrl+Alt+N` | Accept / discard hunk at cursor |
+| `Ctrl+Shift+Alt+Y` / `Ctrl+Shift+Alt+N` | Accept / discard all hunks in file |
+
+If you've turned CodeLens off (`"editor.codeLens": false`), these shortcuts, the hover links and the sidebar panel still work.
 
 ## Settings
 
@@ -80,6 +109,8 @@ Settings are stored in `.vscode/hunkwise/settings.json` and can be changed via t
 | `ignorePatterns` | `[".git"]` | Glob patterns to exclude from tracking |
 | `respectGitignore` | `true` | Whether to honor `.gitignore` rules |
 | `clearOnBranchSwitch` | `false` | Automatically clear all pending hunks when git branch changes |
+| `showInlineDecorations` | `true` | Show CodeLens actions, line highlights and removed-lines hovers in normal editors |
+| `useDiffEditor` | `false` | Open files/hunks from the panel in a diff view instead of the normal editor |
 
 ## .gitignore
 
@@ -120,6 +151,10 @@ When ignore rules change (`.gitignore` modified, or patterns updated via setting
 - Removes baselines for files that are now ignored
 - Adds baselines for files that are newly allowed
 
+### Editor UI
+
+Removed lines can't be drawn as real rows inside the editor without proposed APIs. Instead, a mixed hunk shows a `−N lines` note at the end of its first added line, and a pure deletion shows a red gutter triangle plus `▸ N lines removed above` (or `below` at end of file). Hover either to see the removed text, or use **Open diff** for the full side-by-side view.
+
 ### State persistence
 
 All baseline data is stored in the git repo and survives VSCode restarts. On reactivation, hunkwise reads baselines from `git ls-tree HEAD` + `git show :path` to restore in-memory state.
@@ -133,6 +168,6 @@ npm test                 # run unit tests (node:test runner)
 npm run test:integration # run VSCode integration tests
 ```
 
-Unit tests cover `diffEngine`, `hunkwiseGit`, and `gitignoreManager`. They run with Node's built-in test runner and require no additional dependencies.
+Unit tests cover `diffEngine`, `hunkAnchors`, `hunkwiseGit`, and `gitignoreManager`. They run with Node's built-in test runner and require no additional dependencies.
 
-Integration tests run in a real VSCode extension host via `@vscode/test-cli` and cover rename/delete handling, .gitignore sync, file watching, and enable/disable lifecycle.
+Integration tests run in a real VSCode extension host via `@vscode/test-cli` and cover rename/delete handling, .gitignore sync, file watching, CodeLens/hover/keyboard commands, and enable/disable lifecycle. By default `@vscode/test-cli` downloads VS Code; set `VSCODE_TEST_PATH` to test against an installed build instead, e.g. `VSCODE_TEST_PATH=/usr/share/code/code npm run test:integration`.

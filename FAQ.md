@@ -8,10 +8,12 @@ This is a known timing-dependent behavior. There is no reliable VSCode API to di
 
 When this happens, the file is silently snapshotted as a baseline in hunkwise git (content matches disk), so it won't appear as "New" even after clicking refresh. There is currently no automatic workaround — the file is treated as if it was always part of the project.
 
-## Extension doesn't work on VS Code stable (Linux)
+## Why aren't removed lines shown as red rows inside the editor?
 
-hunkwise relies on the proposed `editorInsets` API. On macOS and Windows, this API works in VS Code stable builds when `argv.json` is configured with `"enable-proposed-api": ["molon.hunkwise"]`.
+Drawing extra rows between editor lines requires VS Code's proposed `editorInsets` API. Upstream hunkwise used it, but that meant an `argv.json` edit, no normal installation, and breakage on VS Code stable on some Linux setups ([upstream issue #20](https://github.com/molon/hunkwise/issues/20)).
 
-However, on some Linux distributions (e.g. CachyOS), the proposed API may not be available in the stable build. If hunkwise fails to activate on your Linux system, try switching to [VS Code Insiders](https://code.visualstudio.com/insiders/).
+This fork uses stable APIs only. Removed lines are summarized inline (`−2 lines` on a changed block, or a red gutter triangle with `▸ 3 lines removed above` for a pure deletion). Hover the change to see the removed text, or click **⇄ Open diff** for the side-by-side view.
 
-See [issue #20](https://github.com/molon/hunkwise/issues/20) for details. If you can help investigate or fix this, PRs are welcome!
+## I turned off CodeLens. How do I accept or discard hunks?
+
+Use the keyboard shortcuts (`Ctrl+Alt+Y` / `Ctrl+Alt+N` for the hunk at the cursor, `Ctrl+Alt+]` / `Ctrl+Alt+[` to move between hunks; `Cmd` on macOS), the links in the hover, right-click → **hunkwise** in the editor, or the sidebar panel.

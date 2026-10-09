@@ -20,7 +20,7 @@ Unit tests use Node's built-in `node:test` runner. Integration tests use `@vscod
 
 ## Architecture
 
-hunkwise is a VSCode extension that provides per-hunk Accept/Discard controls for any external file change (AI tools, scripts, etc.). It requires the proposed `editorInsets` API and cannot be installed from the marketplace.
+hunkwise is a VSCode extension that provides per-hunk Accept/Discard controls for any external file change (AI tools, scripts, etc.). This fork (extension ID `local.hunkwise`) uses only stable VS Code APIs — do not reintroduce proposed APIs (`enabledApiProposals`) or anything that needs `argv.json` changes.
 
 ### Core data flow
 
@@ -32,12 +32,11 @@ hunkwise is a VSCode extension that provides per-hunk Accept/Discard controls fo
 
 4. **`DiffEngine`** (`diffEngine.ts`) computes hunks by calling `Diff.diffLines(baseline, current)` from the `diff` npm package. Hunk IDs are stable strings derived from position (`newStart:newLines:oldStart:oldLines`).
 
-5. **`DecorationManager`** renders the diff UI using the proposed `editorInsets` API (`vscode.window.createWebviewTextEditorInset`). For each hunk it creates:
-   - A red "deleted lines" inset (HTML webview) above the green block
-   - A green line decoration on added lines
-   - An "Accept / Discard" action bar inset below the green block
-
-   Insets are reused across refreshes by cache key (`afterLine:height`) to avoid flicker.
+5. **Editor UI** — all positions come from `getDocumentHunks()` (`documentHunks.ts`), which recomputes hunks from the live buffer and maps them through the pure `computeHunkAnchors()` (`hunkAnchors.ts`). Anchor rules: a hunk with added lines anchors to its first added line; a pure deletion anchors to the line after it (`'above'`), or to the last real line at EOF (`'below'`).
+   - **`DecorationManager`**: green whole-line highlight + overview ruler on added lines; `−N lines` after-text on a mixed hunk; red gutter triangle (`media/deleted-marker.svg`) + `▸ N lines removed above/below` for pure deletions. Debounced on typing; skipped in diff editors and when `showInlineDecorations` is off.
+   - **`DiffCodeLensProvider`** (`diffCodeLens.ts`): `✓ Accept | ↺ Discard | ⇄ Open diff` per hunk at the anchor line.
+   - **`HunkHoverProvider`** (`hunkHover.ts`): removed lines as a ```` ```diff ```` block plus trusted command links.
+   - **`hunkCommands.ts`**: `hunkwise.acceptHunk/discardHunk/openHunkDiff(uri|path, hunkId)`, plus keyboard/context-menu commands (next/prev hunk, accept/discard at cursor, accept/discard all in file) gated on the `hunkwise.hasHunks` context key.
 
 6. **`ReviewPanel`** (`reviewPanel.ts`) is the sidebar webview panel showing all pending files with batch actions. It communicates with the extension via `vscode.postMessage`.
 
@@ -55,8 +54,8 @@ hunkwise is a VSCode extension that provides per-hunk Accept/Discard controls fo
 
 ### Files that can be tested without VSCode
 
-`tsconfig.test.json` compiles only `diffEngine.ts`, `hunkwiseGit.ts`, `gitignoreManager.ts`, and the test files — these have no `vscode` dependency and run in plain Node.
+`tsconfig.test.json` compiles only `diffEngine.ts`, `hunkAnchors.ts`, `hunkwiseGit.ts`, `gitignoreManager.ts`, `pathNormalize.ts`, and the test files — these have no `vscode` dependency and run in plain Node.
 
 ### Integration tests
 
-`tsconfig.integration.json` compiles to `out-integration/`. Tests run in a real VSCode instance via `.vscode-test.mjs` config with `--enable-proposed-api=molon.hunkwise`. Test workspace is at `src/test/integration/workspace/`. Each test `setup()` cleans the workspace and `teardown()` disables hunkwise.
+`tsconfig.integration.json` compiles to `out-integration/`. Tests run in a real VSCode instance via `.vscode-test.mjs`; set `VSCODE_TEST_PATH` (e.g. `/usr/share/code/code`) to use an installed VS Code instead of downloading one. Tests look up the extension as `local.hunkwise`. Test workspace is at `src/test/integration/workspace/`. Each test `setup()` cleans the workspace and `teardown()` disables hunkwise.
