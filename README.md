@@ -33,7 +33,7 @@ AI coding tools like [Claude Code](https://docs.anthropic.com/en/docs/claude-cod
 
 ## Installation
 
-Requires Node.js 18+ and VS Code 1.90+. No proposed APIs and no `argv.json` changes.
+Requires Node.js 22+ (needed by the current `@vscode/vsce`) and VS Code 1.90+. No proposed APIs and no `argv.json` changes.
 
 ```bash
 npm install

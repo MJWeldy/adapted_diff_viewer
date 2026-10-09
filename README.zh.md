@@ -29,7 +29,7 @@
 
 ## 安装
 
-需要 Node.js 18+ 和 VS Code 1.90+。不使用提案 API，无需修改 `argv.json`。
+需要 Node.js 22+（当前版本的 `@vscode/vsce` 要求）和 VS Code 1.90+。不使用提案 API，无需修改 `argv.json`。
 
 ```bash
 npm install
